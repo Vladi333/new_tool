@@ -11,5 +11,6 @@ def test_button1_exist(browser):
 def test_button1_clicked(browser):
     simple_page = SimpleButtonPage(browser)
     simple_page.open()
+    assert simple_page.button_is_displayed()
     simple_page.click_button()
     assert "Submitted" == simple_page.result_text()
