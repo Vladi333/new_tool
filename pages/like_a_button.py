@@ -19,7 +19,12 @@ class LikeAButton(BasePage):
         return self.button().is_displayed()
 
     def button_click(self):
+        try:
+            self.is_clicable(button_selector)
+        except Exception:
+            print("Button Is not clicable")
         self.button().click()
+
 
     def result(self):
         return self.find(result_selector)

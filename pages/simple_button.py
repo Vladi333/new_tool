@@ -1,5 +1,10 @@
+from selenium import webdriver
+from selenium.webdriver.support import expected_conditions as ec
+from selenium.webdriver.support.ui import WebDriverWait
 from pages.base_page import BasePage
 from selenium.webdriver.common.by import By
+
+
 
 button_selector = (By.ID, "submit-id-submit")
 result_selector = (By.ID, "result-text")
@@ -19,10 +24,16 @@ class SimpleButtonPage(BasePage):
         return self.button().is_displayed()
 
     def click_button(self):
+        try:
+            self.is_clicable(button_selector)
+        except Exception:
+            print("Button Is not clicable")
         self.button().click()
+        
 
     def result(self):
         return self.find(result_selector)
 
     def result_text(self):
         return self.result().text
+    
