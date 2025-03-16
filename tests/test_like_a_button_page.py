@@ -9,7 +9,7 @@ def test_button2_exist(browser):
     assert like_a_button.button_is_displayed
 
 
-@pytest.mark.ido
+
 def test_button2_clicked(browser):
     like_a_button = LikeAButton(browser)
     like_a_button.open()
