@@ -49,10 +49,10 @@ jobs:
       - name: Store generated report
         uses: actions/upload-artifact@v3
         with:
-        name: _site
-        path:
-          _site
-        retention-days: 1
+          name: _site
+          path:
+            _site
+          retention-days: 1
 
   publish-report:
     runs-on: ubuntu-latest
