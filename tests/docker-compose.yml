@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  tests-chrome:
+    build: .
+    command: pytest --browser=chrome --alluredir=allure-results
+    volumes:
+      - .:/tests
+
+  tests-firefox:
+    build: .
+    command: pytest --browser=firefox --alluredir=allure-results
+    volumes:
+      - .:/tests
