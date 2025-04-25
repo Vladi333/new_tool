@@ -28,10 +28,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y firefox
-          GECKO_DRIVER_VERSION=$(curl -s https://api.github.com/repos/mozilla/geckodriver/releases/latest | grep "tag_name" | cut -d '"' -f 4)
+          sudo apt-get install -y jq
+          GECKO_DRIVER_VERSION=$(curl -s https://api.github.com/repos/mozilla/geckodriver/releases/latest | jq -r .tag_name)
           wget https://github.com/mozilla/geckodriver/releases/download/$GECKO_DRIVER_VERSION/geckodriver-$GECKO_DRIVER_VERSION-linux64.tar.gz
           tar -xvzf geckodriver-$GECKO_DRIVER_VERSION-linux64.tar.gz
           sudo mv geckodriver /usr/local/bin/
+          which firefox
+          firefox --version
+
 
       - name: Install dependencies
         run: pip install -r requirements.txt
