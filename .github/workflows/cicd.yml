@@ -1,7 +1,8 @@
-name: Automated tests
+name: Run Tests on Chrome and Firefox with Allure Report
 
 on:
   push:
+  pull_request:
 
 permissions:
   contents: read
@@ -11,9 +12,12 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        browser: [chrome, firefox]
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Python
@@ -21,74 +25,78 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Install browsers
+      - name: Install Google Chrome
+        if: matrix.browser == 'chrome'
+        run: |
+          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo apt install -y ./google-chrome-stable_current_amd64.deb
+
+      - name: Install Firefox and Geckodriver
+        if: matrix.browser == 'firefox'
         run: |
           sudo apt-get update
-          sudo apt-get install -y google-chrome-stable firefox wget jq
-
-      - name: Install geckodriver
-        run: |
-          GECKO_DRIVER_VERSION=$(curl -s https://api.github.com/repos/mozilla/geckodriver/releases/latest | jq -r .tag_name)
-          wget https://github.com/mozilla/geckodriver/releases/download/$GECKO_DRIVER_VERSION/geckodriver-$GECKO_DRIVER_VERSION-linux64.tar.gz
-          tar -xvzf geckodriver-$GECKO_DRIVER_VERSION-linux64.tar.gz
-          chmod +x geckodriver
+          sudo apt-get install -y firefox
+          GECKODRIVER_VERSION=$(curl -s https://api.github.com/repos/mozilla/geckodriver/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+          wget https://github.com/mozilla/geckodriver/releases/download/v$GECKODRIVER_VERSION/geckodriver-v$GECKODRIVER_VERSION-linux64.tar.gz
+          tar -xzf geckodriver-v$GECKODRIVER_VERSION-linux64.tar.gz
           sudo mv geckodriver /usr/local/bin/
-          geckodriver --version
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      - name: Run tests (Chrome and Firefox)
-        run: pytest --alluredir=allure-results
+      - name: Run Pytest on ${{ matrix.browser }}
+        run: pytest --browser=${{ matrix.browser }} --alluredir=allure-results-${{ matrix.browser }}
 
-      - name: Upload Allure Results
+      - name: Upload Allure results for ${{ matrix.browser }}
         uses: actions/upload-artifact@v4
         with:
-          name: allure-results
-          path: allure-results
+          name: allure-results-${{ matrix.browser }}
+          path: allure-results-${{ matrix.browser }}
           retention-days: 1
 
   generate-report:
     runs-on: ubuntu-latest
     needs: test
-    name: Generate report
-
     steps:
       - uses: actions/setup-java@v3
         with:
           distribution: 'microsoft'
           java-version: '17'
 
-      - run: |
+      - name: Install Allure CLI
+        run: |
           wget https://github.com/allure-framework/allure2/releases/download/2.23.1/allure-2.23.1.tgz
           sudo tar -zxvf allure-2.23.1.tgz -C /opt/
           sudo ln -s /opt/allure-2.23.1/bin/allure /usr/bin/allure
 
-      - name: Download Allure Artifacts
+      - name: Download Allure results
         uses: actions/download-artifact@v4
 
-      - run: allure generate -c allure-results -o _site
+      - name: Combine Allure results and generate report
+        run: |
+          mkdir combined-results
+          cp -r allure-results-chrome/* combined-results/ || true
+          cp -r allure-results-firefox/* combined-results/ || true
+          allure generate -c combined-results -o _site
 
-      - name: Upload Allure HTML report
+      - name: Upload combined report
         uses: actions/upload-artifact@v4
         with:
           name: _site
           path: _site
-          retention-days: 1
 
-  publish-report:
+  deploy-report:
     runs-on: ubuntu-latest
     needs: generate-report
-    name: Report publication
-
     steps:
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: _site
+          path: _site
 
-      - name: Upload Pages Artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
 
       - name: Deploy to GitHub Pages
-        id: deployment
         uses: actions/deploy-pages@v4
 
