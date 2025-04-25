@@ -14,7 +14,6 @@ def browser(request):
     elif request.param == "firefox":
         options = FirefoxOptions()
         options.add_argument('--headless')
-        options.binary_location = '/usr/bin/firefox'
         driver = webdriver.Firefox(options=options)
     else:
         raise ValueError(f"Unsupported browser: {request.param}")
